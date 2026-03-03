@@ -9,14 +9,7 @@ type ChatMessage = {
   text: string;
 };
 
-const STARTER_PROMPTS = [
-  'What is HESA?',
-  'What does Table 6 represent?',
-  'What is total income in Table 1?',
-  'Break down Table 6 UK vs Non-UK fees',
-  'What are staff costs in Table 8?',
-  'Which department has the highest Table 5 total?'
-];
+const STARTER_PROMPTS = ['What is HESA?', 'What is total income in Table 1?', 'What does Table 6 represent?'];
 
 export function ChatWidget({ data }: { data: DashboardData }) {
   const [input, setInput] = useState('');
@@ -74,7 +67,20 @@ export function ChatWidget({ data }: { data: DashboardData }) {
     <section className="panel chat-widget">
       <div className="chat-head">
         <h2>Data Assistant</h2>
-        <p>Light LLM assistant via server API, grounded in loaded UCL JSON</p>
+        <p>Light LLM chatbot that answers users&apos;s questions on data</p>
+      </div>
+
+      <div className="chat-log" aria-live="polite">
+        {messages.map((message) => (
+          <article className={`chat-bubble ${message.role}`} key={message.id}>
+            <p>{message.text}</p>
+          </article>
+        ))}
+        {loading ? (
+          <article className="chat-bubble assistant">
+            <p>Thinking...</p>
+          </article>
+        ) : null}
       </div>
 
       <div className="chat-prompt-row">
@@ -83,21 +89,6 @@ export function ChatWidget({ data }: { data: DashboardData }) {
             {prompt}
           </button>
         ))}
-      </div>
-
-      <div className="chat-log" aria-live="polite">
-        {messages.map((message) => (
-          <article className={`chat-bubble ${message.role}`} key={message.id}>
-            <h4>{message.role === 'assistant' ? 'Assistant' : 'You'}</h4>
-            <p>{message.text}</p>
-          </article>
-        ))}
-        {loading ? (
-          <article className="chat-bubble assistant">
-            <h4>Assistant</h4>
-            <p>Thinking...</p>
-          </article>
-        ) : null}
       </div>
 
       <form
@@ -117,20 +108,16 @@ export function ChatWidget({ data }: { data: DashboardData }) {
           />
         </label>
         <button className="secondary-btn" type="submit" disabled={loading}>
-          {loading ? 'Sending...' : 'Send'}
+          {loading ? 'Sending...' : 'Ask'}
         </button>
       </form>
 
       {error ? (
-        <div className="notice">
-          <p>{error}</p>
-        </div>
+        <p className="chat-status error">{error}</p>
       ) : null}
 
       {moderationNote ? (
-        <div className="notice">
-          <p>{moderationNote}</p>
-        </div>
+        <p className="chat-status">{moderationNote}</p>
       ) : null}
     </section>
   );
