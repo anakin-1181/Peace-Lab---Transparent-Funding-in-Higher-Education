@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { BarChart } from '../components/BarChart';
 import { PieChart } from '../components/PieChart';
 import { SankeyChart } from '../components/SankeyChart';
+import { LineChart } from '../components/LineChart';
 import { ErrorView, LoadingView } from '../components/StateViews';
 import { YearSelect } from '../components/YearSelect';
 import { useDashboardData } from '../data/useDashboardData';
-import { buildDepartmentComparison, buildDepartmentSankey } from '../lib/charts';
+import { buildDepartmentComparison, buildDepartmentSankey, buildDepartmentShareOverTime } from '../lib/charts';
 import { formatCurrencyK } from '../lib/format';
 import type { NamedValue } from '../types';
 
@@ -19,10 +20,27 @@ function pieComparisonData(allDepartments: NamedValue[]): NamedValue[] {
   return [...top, { name: 'Other departments', value: otherTotal }];
 }
 
+
+function filterLinesByTopN(lines: Array<{ name: string; data: number[] }>, excludeTopN: number) {
+  if (excludeTopN <= 0) return lines;
+
+  const linesWithAvg = lines.map((line) => ({
+    ...line,
+    avgShare: line.data.reduce((sum, val) => sum + val, 0) / line.data.length
+  }));
+
+  return linesWithAvg
+    .sort((a, b) => b.avgShare - a.avgShare)
+    .slice(excludeTopN)
+    .map(({ avgShare, ...rest }) => rest);
+}
+
 export function DepartmentsPage() {
   const { loading, error, data } = useDashboardData();
   const [year, setYear] = useState('');
   const [departmentKey, setDepartmentKey] = useState('');
+  const [visibleDepartments, setVisibleDepartments] = useState<Set<string>>(new Set());
+  
 
   useEffect(() => {
     if (!year && data?.table5.years.length) {
@@ -38,6 +56,24 @@ export function DepartmentsPage() {
     }
     return buildDepartmentComparison(data, year);
   }, [data, year]);
+
+  const shareOverTime = useMemo(() => {
+    if (!data) {
+      return null;
+    }
+    return buildDepartmentShareOverTime(data);
+  }, [data]);
+
+  useEffect(() => {
+    if (!shareOverTime) return;
+    setVisibleDepartments(new Set(shareOverTime.lines.map((l) => l.name)));
+  }, [shareOverTime]);
+
+  const visibleLines = useMemo(() => {
+    if (!shareOverTime) return [];
+
+    return shareOverTime.lines.filter((l) => visibleDepartments.has(l.name));
+  }, [shareOverTime, visibleDepartments]);
 
   const departmentOptions = useMemo(() => {
     if (!yearData) {
@@ -125,6 +161,69 @@ export function DepartmentsPage() {
         links={sankey.links}
         height={760}
       />
+
+      <section className="notice">
+        <p>Part 3: visualize how department research funding share changes across all available years.</p>
+      </section>
+
+      {shareOverTime && (
+        <>
+          <section className="control-strip panel">
+            <div className="year-select" style={{ minWidth: 320 }}>
+              <span>Departments shown</span>
+
+              <div className="dept-actions">
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={() => {
+                    if (!shareOverTime) return;
+                    setVisibleDepartments(new Set(shareOverTime.lines.map((l) => l.name)));
+                  }}
+                >
+                  Select all
+                </button>
+
+                <button type="button" className="secondary-btn" onClick={() => setVisibleDepartments(new Set())}>
+                  Deselect all
+                </button>
+
+                <span className="dept-count">
+                  Showing {visibleDepartments.size} of {shareOverTime?.lines.length ?? 0}
+                </span>
+              </div>
+            </div>
+
+            <div className="dept-checkbox-grid">
+              {shareOverTime?.lines.map((line) => (
+                <label key={line.name} className="dept-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={visibleDepartments.has(line.name)}
+                    onChange={(e) => {
+                      const name = line.name;
+                      setVisibleDepartments((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) next.add(name);
+                        else next.delete(name);
+                        return next;
+                      });
+                    }}
+                  />
+                  <span>{line.name}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <LineChart
+            title="Department Share Over Time"
+            years={shareOverTime.years}
+            lines={visibleLines}
+            height={760}
+          />
+        </>
+      )}
     </div>
   );
 }

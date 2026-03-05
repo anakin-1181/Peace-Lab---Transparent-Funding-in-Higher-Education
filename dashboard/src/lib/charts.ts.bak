@@ -208,7 +208,7 @@ export function buildDepartmentShareOverTime(data: DashboardData): DepartmentSha
   for (const year of years) {
     const yearData = data.table5.byYear[year];
     
-
+    console.log(year, 'researchTotal:', yearData?.researchTotal);
     
     if (!yearData) continue;
 
