@@ -540,6 +540,48 @@ input {
   color: var(--muted);
 }
 
+
+.dept-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dept-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
+
+.dept-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+.dept-checkbox {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 0.62rem;
+  background: rgba(12, 12, 12, 0.55);
+  padding: 0.45rem 0.6rem;
+}
+
+.dept-checkbox span {
+  color: #f4eeff;
+  font-size: 0.86rem;
+}
+
+.dept-checkbox input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
 @keyframes spin {
   to {
     transform: rotate(1turn);

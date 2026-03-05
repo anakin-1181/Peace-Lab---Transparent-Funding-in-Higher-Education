@@ -149,19 +149,6 @@ export function buildExpenditureBreakdown(data: DashboardData, year: string): Na
   ].filter((item) => item.value > 0);
 }
 
-export function buildStaffCostBreakdown(data: DashboardData, year: string): NamedValue[] {
-  const t8 = data.table8.byYear[year];
-
-  if (!t8) {
-    return [];
-  }
-
-  return [
-    { name: 'Academic staff costs', value: t8.academicStaffCosts },
-    { name: 'Other staff costs', value: t8.otherStaffCosts }
-  ].filter((item) => item.value > 0);
-}
-
 export function buildDepartmentSankey(
   department: DepartmentBreakdown
 ) {
@@ -221,7 +208,7 @@ export function buildDepartmentShareOverTime(data: DashboardData): DepartmentSha
   for (const year of years) {
     const yearData = data.table5.byYear[year];
     
-
+    console.log(year, 'researchTotal:', yearData?.researchTotal);
     
     if (!yearData) continue;
 
