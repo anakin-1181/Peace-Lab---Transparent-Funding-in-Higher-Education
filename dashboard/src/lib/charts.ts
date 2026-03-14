@@ -1,4 +1,4 @@
-import type { DashboardData, DepartmentBreakdown, NamedValue, SankeyLink, SankeyNode } from '../types';
+import type { DashboardData, DepartmentBreakdown, NamedValue, SankeyLink, SankeyNode, Table5YearData } from '../types';
 
 export type OverviewModel = {
   year: string;
@@ -17,6 +17,33 @@ function toNodes(unique: string[]) {
 
 function uniqueNodeNames(links: SankeyLink[]) {
   return [...new Set(links.flatMap((link) => [link.source, link.target]))];
+}
+
+export const OTHER_NON_ACADEMIC_NAME = 'Other (non-academic)';
+
+function buildDepartmentValuesWithOther(yearData: Table5YearData | undefined): NamedValue[] {
+  if (!yearData) {
+    return [];
+  }
+
+  const academicDepartments = yearData.departments
+    .map((department) => ({
+      name: `${department.code} ${department.name}`,
+      value: department.total
+    }))
+    .filter((item) => item.value > 0);
+
+  const academicTotal = academicDepartments.reduce((sum, item) => sum + item.value, 0);
+  const nonAcademicGap = yearData.researchTotal - academicTotal;
+
+  if (nonAcademicGap > 0) {
+    academicDepartments.push({
+      name: OTHER_NON_ACADEMIC_NAME,
+      value: nonAcademicGap
+    });
+  }
+
+  return academicDepartments.sort((a, b) => b.value - a.value);
 }
 
 export function buildOverviewModel(data: DashboardData, year: string): OverviewModel {
@@ -198,14 +225,8 @@ export function buildDepartmentSankey(
 }
 
 export function buildDepartmentComparison(data: DashboardData, year: string): NamedValue[] {
-  const rows = data.table5.byYear[year]?.departments ?? [];
-  return rows
-    .map((department) => ({
-      name: `${department.code} ${department.name}`,
-      value: department.total
-    }))
-    .filter((item) => item.value > 0)
-    .sort((a, b) => b.value - a.value);
+  const yearData = data.table5.byYear[year];
+  return buildDepartmentValuesWithOther(yearData);
 }
 export type DepartmentShareOverTime = {
   years: string[];
@@ -217,16 +238,16 @@ export function buildDepartmentShareOverTime(data: DashboardData): DepartmentSha
 
   // Collect all unique departments across all years
   const deptMap = new Map<string, { code: string; name: string; shares: number[] }>();
+  const otherShares = new Array(years.length).fill(0);
 
-  for (const year of years) {
+  for (const [yearIndex, year] of years.entries()) {
     const yearData = data.table5.byYear[year];
-    
-
-    
     if (!yearData) continue;
 
     const yearTotal = yearData.researchTotal;
     if (yearTotal <= 0) continue;
+
+    let academicTotal = 0;
 
     for (const dept of yearData.departments) {
       const deptKey = `${dept.code}|${dept.name}`;
@@ -234,9 +255,17 @@ export function buildDepartmentShareOverTime(data: DashboardData): DepartmentSha
         deptMap.set(deptKey, { code: dept.code, name: dept.name, shares: new Array(years.length).fill(0) });
       }
 
+      if (dept.total > 0) {
+        academicTotal += dept.total;
+      }
+
       const entry = deptMap.get(deptKey)!;
-      const yearIndex = years.indexOf(year);
       entry.shares[yearIndex] = (dept.total / yearTotal) * 100;
+    }
+
+    const nonAcademicGap = yearTotal - academicTotal;
+    if (nonAcademicGap > 0) {
+      otherShares[yearIndex] = (nonAcademicGap / yearTotal) * 100;
     }
   }
 
@@ -247,6 +276,14 @@ export function buildDepartmentShareOverTime(data: DashboardData): DepartmentSha
       data: dept.shares
     }))
     .sort((a, b) => (b.data[b.data.length - 1] ?? 0) - (a.data[a.data.length - 1] ?? 0));
+
+  if (otherShares.some((share) => share > 0)) {
+    lines.push({
+      name: OTHER_NON_ACADEMIC_NAME,
+      data: otherShares
+    });
+    lines.sort((a, b) => (b.data[b.data.length - 1] ?? 0) - (a.data[a.data.length - 1] ?? 0));
+  }
 
   return { years, lines };
 }

@@ -11,3 +11,4 @@ Data/
 dashboard/.env
 dashboard/.env.local
 dashboard/.env.*.local
+data mismatch.md

@@ -6,35 +6,39 @@ import { LineChart } from '../components/LineChart';
 import { ErrorView, LoadingView } from '../components/StateViews';
 import { YearSelect } from '../components/YearSelect';
 import { useDashboardData } from '../data/useDashboardData';
-import { buildDepartmentComparison, buildDepartmentSankey, buildDepartmentShareOverTime } from '../lib/charts';
+import {
+  OTHER_NON_ACADEMIC_NAME,
+  buildDepartmentComparison,
+  buildDepartmentSankey,
+  buildDepartmentShareOverTime
+} from '../lib/charts';
 import { formatCurrencyK } from '../lib/format';
 import type { NamedValue } from '../types';
 
 function pieComparisonData(allDepartments: NamedValue[]): NamedValue[] {
-  if (allDepartments.length <= 12) {
+  const maxSlices = 12;
+  if (allDepartments.length <= maxSlices) {
     return allDepartments;
   }
 
-  const top = allDepartments.slice(0, 12);
-  const otherTotal = allDepartments.slice(12).reduce((sum, row) => sum + row.value, 0);
-  return [...top, { name: 'Other departments', value: otherTotal }];
+  const nonAcademicOther = allDepartments.find((row) => row.name === OTHER_NON_ACADEMIC_NAME);
+  const academicDepartments = allDepartments.filter((row) => row.name !== OTHER_NON_ACADEMIC_NAME);
+
+  if (!nonAcademicOther) {
+    const top = academicDepartments.slice(0, maxSlices);
+    const otherTotal = academicDepartments.slice(maxSlices).reduce((sum, row) => sum + row.value, 0);
+    return [...top, { name: 'Other departments', value: otherTotal }];
+  }
+
+  const maxAcademicWithoutBucket = maxSlices - 1;
+  if (academicDepartments.length <= maxAcademicWithoutBucket) {
+    return [...academicDepartments, nonAcademicOther];
+  }
+
+  const topAcademic = academicDepartments.slice(0, maxSlices - 2);
+  const groupedAcademicTotal = academicDepartments.slice(maxSlices - 2).reduce((sum, row) => sum + row.value, 0);
+  return [...topAcademic, { name: 'Other departments', value: groupedAcademicTotal }, nonAcademicOther];
 }
-
-
-function filterLinesByTopN(lines: Array<{ name: string; data: number[] }>, excludeTopN: number) {
-  if (excludeTopN <= 0) return lines;
-
-  const linesWithAvg = lines.map((line) => ({
-    ...line,
-    avgShare: line.data.reduce((sum, val) => sum + val, 0) / line.data.length
-  }));
-
-  return linesWithAvg
-    .sort((a, b) => b.avgShare - a.avgShare)
-    .slice(excludeTopN)
-    .map(({ avgShare, ...rest }) => rest);
-}
-
 export function DepartmentsPage() {
   const { loading, error, data } = useDashboardData();
   const [year, setYear] = useState('');
