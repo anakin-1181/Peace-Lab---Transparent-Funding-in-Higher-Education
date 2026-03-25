@@ -95,57 +95,7 @@ The chat widget is optional. It sends a compact version of the loaded dataset to
 
 If the API route is not running, the dashboard still works, but chat will not.
 
-## Local Development
 
-### Frontend only
-
-```bash
-cd dashboard
-npm install
-npm run dev
-```
-
-This runs the Vite app. The UI will load, but `/api/chat` will not be available through plain Vite dev server routing.
-
-### Full local app with chat route
-
-```bash
-cd dashboard
-npm install
-cp .env.example .env.local
-npx vercel dev
-```
-
-Then add your OpenRouter credentials in `.env.local`.
-
-Required environment variables:
-
-- `OPENROUTER_API_KEY`
-
-Common optional variables:
-
-- `OPENROUTER_MODEL`
-- `OPENROUTER_FALLBACK_MODELS`
-- `OPENROUTER_TIMEOUT_MS`
-- `OPENROUTER_MAX_RETRIES`
-- `OPENROUTER_REFERER`
-- `OPENROUTER_TITLE`
-
-## Build Commands
-
-From [`dashboard/`](/Users/anakin./Projects/2026/HE_data2/dashboard):
-
-```bash
-npm run build:data
-npm run check
-npm run build
-```
-
-What they do:
-
-- `npm run build:data`: rebuilds `public/ucl-data.json` from the HESA source files.
-- `npm run check`: runs TypeScript type-checking.
-- `npm run build`: regenerates data and creates the production frontend bundle.
 
 ## Repo Structure
 
@@ -164,31 +114,6 @@ HE_data2/
 ├─ data mismatch.md         # Known cross-table mismatch notes
 └─ README.md
 ```
-
-## Known Caveats
-
-- HESA tables can contain restatements, so totals from different tables do not always align perfectly year to year.
-- `Table 6` is not currently available in this repo for `2015/16` and `2016/17`, so tuition drill-downs are unavailable for those years.
-- `Table 1` and `Table 8` have a known expenditure mismatch for `2017/18`.
-- Some `Table 6` newer-year fields appear to have schema/header drift, which affects certain UK/EU aggregation checks.
-- Department views represent `research grants and contracts` only. They are not a full department P&L.
-
-For the current audit notes, see [`data mismatch.md`](/Users/anakin./Projects/2026/HE_data2/data%20mismatch.md).
-
-## What This Project Does Not Do
-
-- It does not compare UCL against other providers.
-- It does not estimate missing years.
-- It does not forecast future income or expenditure.
-- It does not replace the official HESA documentation.
-
-## Related Dashboard Repos
-
-These are useful reference points for open-source dashboard design and analytics product patterns:
-
-- [18F/analytics.usa.gov](https://github.com/18F/analytics.usa.gov) - public-sector transparency dashboard for web analytics.
-- [metabase/metabase](https://github.com/metabase/metabase) - widely used open-source analytics dashboard platform.
-- [grafana/grafana](https://github.com/grafana/grafana) - mature open-source dashboard and observability platform.
 
 ## Recommended User Reading Order
 
